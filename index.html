@@ -2,124 +2,240 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Crypto Clicker Mini App</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Mining Clicker - Telegram</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
-        /* Весь CSS прямо здесь — быстро и наглядно */
-        body { font-family: sans-serif; background: #fff176; margin: 0; padding: 20px; text-align: center; }
-        .card { background: #fff; padding: 15px; border-radius: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); margin-bottom: 10px; }
-        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-        .btn-click { width: 120px; height: 120px; border-radius: 50%; border: 5px solid #000; background: #ffeb3b; font-weight: bold; cursor: pointer; font-size: 18px; margin: 20px 0; }
-        .btn-buy { width: 100%; padding: 8px; border-radius: 8px; border: 1px solid #000; cursor: pointer; background: #eee; }
-        .btn-buy:disabled { background: #ccc; cursor: not-allowed; }
-        .tabs { display: flex; background: #000; border-radius: 10px; padding: 5px; margin-bottom: 15px; }
-        .tab { flex: 1; color: #fff; padding: 8px; cursor: pointer; border: none; background: none; }
-        .tab.active { background: #ffeb3b; color: #000; border-radius: 8px; }
+        /* === БЛОК 1: БАЗОВЫЕ СТИЛИ === */
+        :root {
+            --primary: #ffeb3b;
+            --bg: #ffffff;
+            --text: #000000;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            margin: 0;
+            padding: 0;
+            user-select: none;
+            overflow-x: hidden;
+        }
+        * { box-sizing: border-box; }
+
+        /* === БЛОК 2: ЭКРАН ПРИВЕТСТВИЯ === */
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+        #welcome-screen {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: linear-gradient(135deg, #ffeb3b 0%, #fff176 100%);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            animation: pulse 2s ease-in-out infinite;
+        }
+        .start-btn {
+            background-color: #000;
+            color: #ffeb3b;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 25px;
+            font-size: 18px;
+            font-weight: bold;
+            margin-top: 20px;
+            cursor: pointer;
+        }
+
+        /* === БЛОК 3: ГЛАВНЫЙ ИНТЕРФЕЙС === */
+        .container {
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+            padding: 10px;
+            padding-bottom: 20px;
+        }
+        
+        /* Вкладки */
+        .tab-menu {
+            display: flex;
+            background: #000;
+            border-radius: 15px;
+            padding: 5px;
+            margin-bottom: 15px;
+        }
+        .tab-btn {
+            flex: 1;
+            padding: 10px;
+            border-radius: 10px;
+            border: none;
+            font-weight: bold;
+            font-size: 16px;
+            cursor: pointer;
+            background: transparent;
+            color: #fff;
+            transition: all 0.2s;
+        }
+        .tab-btn.active {
+            background: var(--primary);
+            color: #000;
+        }
+
+        /* Шапка со статистикой */
+        .header {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        .info-card {
+            background-color: var(--primary);
+            padding: 14px 10px;
+            border-radius: 15px;
+            text-align: center;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+        .info-title { font-size: 14px; margin-bottom: 5px; font-weight: bold; }
+        .info-value { font-size: 20px; font-weight: bold; }
+
+        /* Кнопка майнинга */
+        .main-btn-container {
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px 0;
+        }
+        .click-btn {
+            width: 160px;
+            height: 160px;
+            background-color: var(--primary);
+            border: 4px solid #000;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+            transition: transform 0.1s ease;
+            font-size: 16px;
+        }
+        .click-btn.pressed { transform: scale(0.95); }
+        .click-btn span { font-size: 40px; margin-bottom: 5px; }
+
+        /* Магазин */
+        .shop-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+        }
+        .card-ui {
+            background-color: var(--primary);
+            padding: 12px 10px;
+            border-radius: 15px;
+            text-align: center;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+        .card-title { font-size: 14px; font-weight: bold; margin-bottom: 5px; }
+        .card-desc { font-size: 12px; color: #333; margin-bottom: 10px; }
+        .upgrade-btn {
+            background-color: #fff;
+            color: #000;
+            border: 2px solid #000;
+            padding: 8px;
+            border-radius: 10px;
+            font-weight: bold;
+            cursor: pointer;
+            width: 100%;
+        }
+        .upgrade-btn:disabled {
+            background-color: #ccc;
+            border-color: #999;
+            color: #666;
+            cursor: not-allowed;
+        }
     </style>
 </head>
 <body>
 
-    <div id="user-name">Загрузка...</div>
-    
-    <div class="tabs">
-        <button class="tab active" onclick="switchTab('game')">🎮 Ферма</button>
-        <button class="tab" onclick="switchTab('shop')">🛒 Магазин</button>
+    <div id="welcome-screen">
+        <h2 id="welcome-name" style="font-size: 32px; margin: 0 0 10px 0;">Привет!</h2>
+        <p style="margin: 0 0 20px 0;">Добро пожаловать на Майнинг-ферму ⛏️</p>
+        <button class="start-btn" onclick="startGame()">Погнали!</button>
     </div>
 
-    <div class="grid">
-        <div class="card">Баланс: <b id="balance">0</b> 💰</div>
-        <div class="card">Доход: <b id="income">0</b> ⚡</div>
-    </div>
+    <div class="container" id="app-container" style="display: none;">
+        
+        <div class="tab-menu">
+            <button class="tab-btn active" id="tab-game" onclick="switchTab('game')">🎮 Ферма</button>
+            <button class="tab-btn" id="tab-shop" onclick="switchTab('shop')">🛒 Магазин</button>
+        </div>
 
-    <div id="game-screen">
-        <button class="btn-click" onclick="clickFarm()">⛏️<br>МАЙНИТЬ</button>
-    </div>
+        <div class="header">
+            <div class="info-card">
+                <div class="info-title">Баланс 💰</div>
+                <div class="info-value" id="ui-balance">0</div>
+            </div>
+            <div class="info-card">
+                <div class="info-title">Доход / сек ⚡</div>
+                <div class="info-value" id="ui-income">+0</div>
+            </div>
+        </div>
 
-    <div id="shop-screen" style="display: none;">
-        <div class="grid" id="shop-grid"></div>
+        <div id="screen-game" class="main-btn-container">
+            <button class="click-btn" id="main-click-btn" onpointerdown="clickFarm()">
+                <span>⛏️</span>
+                <b>МАЙНИТЬ</b>
+            </button>
+        </div>
+
+        <div id="screen-shop" class="shop-grid" style="display: none;">
+            </div>
+
     </div>
 
     <script>
-        // ДАННЫЕ ИГРЫ
-        let balance = parseFloat(localStorage.getItem('minibot_balance')) || 0;
-        let ownedCards = JSON.parse(localStorage.getItem('minibot_cards')) || {};
-
-        const CARDS = [
-            { id: 'gtx1050', name: 'GTX 1050', price: 50, income: 1 },
-            { id: 'rtx3060', name: 'RTX 3060', price: 500, income: 10 },
-            { id: 'rtx4090', name: 'RTX 4090', price: 5000, income: 150 }
-        ];
-
-        // ИНИЦИАЛИЗАЦИЯ TELEGRAM
+        // === ИНИЦИАЛИЗАЦИЯ TELEGRAM ===
         const tg = window.Telegram.WebApp;
         tg.expand();
-        document.getElementById('user-name').innerText = `Майнер: ${tg.initDataUnsafe?.user?.first_name || 'Гость'}`;
+        const userName = tg.initDataUnsafe?.user?.first_name || 'Гость';
+        document.getElementById('welcome-name').innerText = `Привет, ${userName}!`;
 
-        // ЛОГИКА
-        function updateUI() {
-            document.getElementById('balance').innerText = Math.floor(balance);
-            let totalIncome = 0;
-            CARDS.forEach(c => totalIncome += (ownedCards[c.id] || 0) * c.income);
-            document.getElementById('income').innerText = totalIncome;
-            renderShop();
-        }
+        // === БАЗА ДАННЫХ И СОСТОЯНИЕ ===
+        const MINING_CARDS = [
+            { id: 'gtx1050', name: 'GTX 1050 Ti', basePrice: 50, income: 1 },
+            { id: 'gtx1080', name: 'GTX 1080', basePrice: 250, income: 5 },
+            { id: 'rtx2060', name: 'RTX 2060', basePrice: 1000, income: 25 },
+            { id: 'rtx3070', name: 'RTX 3070', basePrice: 5000, income: 150 },
+            { id: 'rtx3090', name: 'RTX 3090', basePrice: 25000, income: 800 },
+            { id: 'rtx4070', name: 'RTX 4070', basePrice: 100000, income: 3500 },
+            { id: 'rtx4080', name: 'RTX 4080', basePrice: 500000, income: 20000 },
+            { id: 'rtx4090', name: 'RTX 4090', basePrice: 2500000, income: 100000 }
+        ];
 
-        function clickFarm() {
-            balance += 1;
-            save();
+        let state = {
+            balance: parseFloat(localStorage.getItem('mc_balance')) || 0,
+            cards: JSON.parse(localStorage.getItem('mc_cards')) || {}
+        };
+
+        // === ОСНОВНЫЕ ФУНКЦИИ ===
+        function startGame() {
+            document.getElementById('welcome-screen').style.display = 'none';
+            document.getElementById('app-container').style.display = 'flex';
             updateUI();
         }
 
-        function buyCard(id, price) {
-            if (balance >= price) {
-                balance -= price;
-                ownedCards[id] = (ownedCards[id] || 0) + 1;
-                save();
-                updateUI();
-            }
-        }
-
-        function save() {
-            localStorage.setItem('minibot_balance', balance);
-            localStorage.setItem('minibot_cards', JSON.stringify(ownedCards));
-        }
-
         function switchTab(tab) {
-            document.getElementById('game-screen').style.display = tab === 'game' ? 'block' : 'none';
-            document.getElementById('shop-screen').style.display = tab === 'shop' ? 'block' : 'none';
-            document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.innerText.includes(tab === 'game' ? 'Ферма' : 'Магазин')));
-        }
-
-        function renderShop() {
-            const grid = document.getElementById('shop-grid');
-            grid.innerHTML = '';
-            CARDS.forEach(c => {
-                const count = ownedCards[c.id] || 0;
-                const currentPrice = Math.floor(c.price * Math.pow(1.5, count));
-                grid.innerHTML += `
-                    <div class="card">
-                        <b>${c.name}</b><br>
-                        ${count} шт. (+${c.income}/с)<br>
-                        <button class="btn-buy" onclick="buyCard('${c.id}', ${currentPrice})" ${balance < currentPrice ? 'disabled' : ''}>
-                            ${currentPrice} 💰
-                        </button>
-                    </div>`;
-            });
-        }
-
-        // МАЙНИНГ РАЗ В СЕКУНДУ
-        setInterval(() => {
-            let totalIncome = 0;
-            CARDS.forEach(c => totalIncome += (ownedCards[c.id] || 0) * c.income);
-            if (totalIncome > 0) {
-                balance += totalIncome;
-                save();
-                updateUI();
-            }
-        }, 1000);
-
-        updateUI();
-    </script>
-</body>
-</html>
+            document.getElementById('screen-game').style.display = tab === 'game' ? 'flex' : 'none';
+            document.getElementById('screen-shop').style.display = tab === 'shop' ? 'grid' : 'none';
+            
+            document.getElementById('tab-game').className = `tab-btn ${tab === 'game' ? 'active' : ''
