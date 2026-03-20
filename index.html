@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Crypto Clicker Mini App</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        /* Весь CSS прямо здесь — быстро и наглядно */
+        body { font-family: sans-serif; background: #fff176; margin: 0; padding: 20px; text-align: center; }
+        .card { background: #fff; padding: 15px; border-radius: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); margin-bottom: 10px; }
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .btn-click { width: 120px; height: 120px; border-radius: 50%; border: 5px solid #000; background: #ffeb3b; font-weight: bold; cursor: pointer; font-size: 18px; margin: 20px 0; }
+        .btn-buy { width: 100%; padding: 8px; border-radius: 8px; border: 1px solid #000; cursor: pointer; background: #eee; }
+        .btn-buy:disabled { background: #ccc; cursor: not-allowed; }
+        .tabs { display: flex; background: #000; border-radius: 10px; padding: 5px; margin-bottom: 15px; }
+        .tab { flex: 1; color: #fff; padding: 8px; cursor: pointer; border: none; background: none; }
+        .tab.active { background: #ffeb3b; color: #000; border-radius: 8px; }
+    </style>
+</head>
+<body>
+
+    <div id="user-name">Загрузка...</div>
+    
+    <div class="tabs">
+        <button class="tab active" onclick="switchTab('game')">🎮 Ферма</button>
+        <button class="tab" onclick="switchTab('shop')">🛒 Магазин</button>
+    </div>
+
+    <div class="grid">
+        <div class="card">Баланс: <b id="balance">0</b> 💰</div>
+        <div class="card">Доход: <b id="income">0</b> ⚡</div>
+    </div>
+
+    <div id="game-screen">
+        <button class="btn-click" onclick="clickFarm()">⛏️<br>МАЙНИТЬ</button>
+    </div>
+
+    <div id="shop-screen" style="display: none;">
+        <div class="grid" id="shop-grid"></div>
+    </div>
+
+    <script>
+        // ДАННЫЕ ИГРЫ
+        let balance = parseFloat(localStorage.getItem('minibot_balance')) || 0;
+        let ownedCards = JSON.parse(localStorage.getItem('minibot_cards')) || {};
+
+        const CARDS = [
+            { id: 'gtx1050', name: 'GTX 1050', price: 50, income: 1 },
+            { id: 'rtx3060', name: 'RTX 3060', price: 500, income: 10 },
+            { id: 'rtx4090', name: 'RTX 4090', price: 5000, income: 150 }
+        ];
+
+        // ИНИЦИАЛИЗАЦИЯ TELEGRAM
+        const tg = window.Telegram.WebApp;
+        tg.expand();
+        document.getElementById('user-name').innerText = `Майнер: ${tg.initDataUnsafe?.user?.first_name || 'Гость'}`;
+
+        // ЛОГИКА
+        function updateUI() {
+            document.getElementById('balance').innerText = Math.floor(balance);
+            let totalIncome = 0;
+            CARDS.forEach(c => totalIncome += (ownedCards[c.id] || 0) * c.income);
+            document.getElementById('income').innerText = totalIncome;
+            renderShop();
+        }
+
+        function clickFarm() {
+            balance += 1;
+            save();
+            updateUI();
+        }
+
+        function buyCard(id, price) {
+            if (balance >= price) {
+                balance -= price;
+                ownedCards[id] = (ownedCards[id] || 0) + 1;
+                save();
+                updateUI();
+            }
+        }
+
+        function save() {
+            localStorage.setItem('minibot_balance', balance);
+            localStorage.setItem('minibot_cards', JSON.stringify(ownedCards));
+        }
+
+        function switchTab(tab) {
+            document.getElementById('game-screen').style.display = tab === 'game' ? 'block' : 'none';
+            document.getElementById('shop-screen').style.display = tab === 'shop' ? 'block' : 'none';
+            document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.innerText.includes(tab === 'game' ? 'Ферма' : 'Магазин')));
+        }
+
+        function renderShop() {
+            const grid = document.getElementById('shop-grid');
+            grid.innerHTML = '';
+            CARDS.forEach(c => {
+                const count = ownedCards[c.id] || 0;
+                const currentPrice = Math.floor(c.price * Math.pow(1.5, count));
+                grid.innerHTML += `
+                    <div class="card">
+                        <b>${c.name}</b><br>
+                        ${count} шт. (+${c.income}/с)<br>
+                        <button class="btn-buy" onclick="buyCard('${c.id}', ${currentPrice})" ${balance < currentPrice ? 'disabled' : ''}>
+                            ${currentPrice} 💰
+                        </button>
+                    </div>`;
+            });
+        }
+
+        // МАЙНИНГ РАЗ В СЕКУНДУ
+        setInterval(() => {
+            let totalIncome = 0;
+            CARDS.forEach(c => totalIncome += (ownedCards[c.id] || 0) * c.income);
+            if (totalIncome > 0) {
+                balance += totalIncome;
+                save();
+                updateUI();
+            }
+        }, 1000);
+
+        updateUI();
+    </script>
+</body>
+</html>
