@@ -238,4 +238,98 @@
             document.getElementById('screen-game').style.display = tab === 'game' ? 'flex' : 'none';
             document.getElementById('screen-shop').style.display = tab === 'shop' ? 'grid' : 'none';
             
-            document.getElementById('tab-game').className = `tab-btn ${tab === 'game' ? 'active' : ''
+            document.getElementById('tab-game').className = `tab-btn ${tab === 'game' ? 'active' : ''}`;
+            document.getElementById('tab-shop').className = `tab-btn ${tab === 'shop' ? 'active' : ''}`;
+        }
+
+        function getTotalIncome() {
+            let total = 0;
+            MINING_CARDS.forEach(card => {
+                total += (state.cards[card.id] || 0) * card.income;
+            });
+            return total;
+        }
+
+        function getPrice(basePrice, ownedCount) {
+            return Math.floor(basePrice * Math.pow(1.5, ownedCount));
+        }
+
+        function saveState() {
+            localStorage.setItem('mc_balance', state.balance);
+            localStorage.setItem('mc_cards', JSON.stringify(state.cards));
+        }
+
+        function updateUI() {
+            // Обновляем шапку
+            document.getElementById('ui-balance').innerText = Math.floor(state.balance).toLocaleString();
+            document.getElementById('ui-income').innerText = '+' + getTotalIncome().toLocaleString();
+            
+            // Отрисовываем магазин
+            const shopGrid = document.getElementById('screen-shop');
+            shopGrid.innerHTML = '';
+            
+            MINING_CARDS.forEach(card => {
+                const owned = state.cards[card.id] || 0;
+                const price = getPrice(card.basePrice, owned);
+                const canAfford = state.balance >= price;
+
+                shopGrid.innerHTML += `
+                    <div class="card-ui">
+                        <div>
+                            <div class="card-title">${card.name}</div>
+                            <div class="card-desc">
+                                В наличии: ${owned} шт.<br>
+                                <b>⚡ +${card.income}/сек</b>
+                            </div>
+                        </div>
+                        <button class="upgrade-btn" 
+                                onclick="buyCard('${card.id}', ${card.basePrice})" 
+                                ${!canAfford ? 'disabled' : ''}>
+                            Купить за ${price.toLocaleString()}
+                        </button>
+                    </div>
+                `;
+            });
+        }
+
+        // === ИГРОВЫЕ ДЕЙСТВИЯ ===
+        function clickFarm() {
+            state.balance += 1;
+            saveState();
+            updateUI();
+            
+            // Анимация кнопки
+            const btn = document.getElementById('main-click-btn');
+            btn.classList.add('pressed');
+            setTimeout(() => btn.classList.remove('pressed'), 100);
+            
+            // Тактильный отклик для Telegram (вибрация)
+            if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
+        }
+
+        window.buyCard = function(cardId, basePrice) {
+            const owned = state.cards[cardId] || 0;
+            const price = getPrice(basePrice, owned);
+            
+            if (state.balance >= price) {
+                state.balance -= price;
+                state.cards[cardId] = owned + 1;
+                saveState();
+                updateUI();
+                if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
+            }
+        };
+
+        // === ИГРОВОЙ ЦИКЛ (МАЙНИНГ) ===
+        setInterval(() => {
+            const income = getTotalIncome();
+            if (income > 0) {
+                state.balance += income;
+                saveState();
+                updateUI();
+            }
+        }, 1000);
+
+    </script>
+</body>
+</html>
